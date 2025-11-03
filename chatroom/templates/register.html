@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Register · Chatroom</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg,#0b1220,#0f172a); color:#e5e7eb; font-family:Inter,system-ui; }
+    .card { width:100%; max-width:480px; background:linear-gradient(180deg,#0f172a,#0b1020); border:1px solid rgba(255,255,255,.06); border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+    .card-content { padding:28px; }
+    .btn-primary { background:linear-gradient(135deg,#3b82f6,#2563eb); border-radius:10px; text-transform:none; height:44px; line-height:44px; width:100%; }
+    .input { width:100%; background:#0f172a; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:12px 14px; color:#e5e7eb; }
+    label { display:block; margin:10px 0 6px; color:#9ca3af; font-size:.9rem; }
+    .muted { color:#9ca3af; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-content">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span class="material-icons" style="color:#60a5fa;">person_add</span>
+        <span style="font-weight:600;">Create your account</span>
+      </div>
+      {% if error %}<div class="card-panel red darken-4" style="padding:10px;color:#fff;">{{error}}</div>{% endif %}
+      <form method="POST">
+        {% csrf_token %}
+        <label for="username">Username</label>
+        <input class="input" id="username" name="username" type="text" required>
+
+        <label for="password">Password</label>
+        <input class="input" id="password" name="password" type="password" required>
+
+        <label for="gender">Gender</label>
+        <select class="input" id="gender" name="gender" required>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+        <button class="btn btn-primary waves-effect waves-light" type="submit">Register</button>
+      </form>
+      <div class="muted" style="margin-top:12px;">Have an account? <a href="/login/">Login</a></div>
+    </div>
+  </div>
+  
+</body>
+</html>
+
+

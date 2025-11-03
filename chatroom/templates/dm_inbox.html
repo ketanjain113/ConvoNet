@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Direct Messages</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;background:#0a0f1a;color:#e6eaf2;font-family:Inter,system-ui}
+    .wrap{max-width:900px;margin:0 auto;padding:16px}
+    .card{background:#0f1522;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:16px}
+    .row{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.06);padding:10px 0}
+    .row:last-child{border-bottom:none}
+    .pill{background:#1b2335;border:1px solid rgba(255,255,255,.06);border-radius:999px;padding:2px 8px;font-size:12px}
+    a{color:#9ab6ff;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h3 style="margin:0 0 12px;">Direct Messages</h3>
+      <form id="start" style="display:flex; gap:8px; margin-bottom:12px;">
+        {% csrf_token %}
+        <input id="to" placeholder="Enter username" style="flex:1; background:#0a0f1a; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px; color:#e6eaf2;">
+        <button type="button" onclick="openThread()" style="background:#4f8cff;color:#fff;border:none;border-radius:10px;padding:10px 14px;">Open</button>
+      </form>
+      {% for p in partners %}
+        <div class="row">
+          <div><strong>@{{p}}</strong></div>
+          <div>
+            {% if unread[p] %}
+            <span class="pill">{{ unread[p] }}</span>
+            {% endif %}
+            <a href="/dm/chat/{{p}}/">Open</a>
+          </div>
+        </div>
+      {% empty %}
+        <div>No conversations yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+  <script>
+    function openThread(){
+      const u = document.getElementById('to').value.trim();
+      if(!u) return; openUser(u);
+    }
+    function openUser(u){
+      window.location.href = '/dm/thread/' + encodeURIComponent(u) + '/';
+    }
+  </script>
+</body>
+</html>
+
+

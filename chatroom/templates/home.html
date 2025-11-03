@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chatroom</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  
+  <style>
+    :root { --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --primary:#3b82f6; }
+    html, body { height:100%; }
+    body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:linear-gradient(180deg, #0b1220, #0f172a); color:var(--text); display:flex; align-items:center; justify-content:center; }
+    .card { background:linear-gradient(180deg, #0f172a, #0b1020); border-radius:16px; border:1px solid rgba(255,255,255,0.06); box-shadow:0 10px 30px rgba(0,0,0,.35); overflow:hidden; }
+    .card-title { display:flex; align-items:center; gap:10px; font-weight:600; }
+    .subtitle { color:var(--muted); font-size:0.95rem; margin-top:4px; }
+    .input-field input { color:var(--text); }
+    .input-field input:focus { border-bottom:1px solid var(--primary) !important; box-shadow:0 1px 0 0 var(--primary) !important; }
+    .btn-primary { background:linear-gradient(135deg, #3b82f6, #2563eb); border-radius:10px; text-transform:none; height:44px; line-height:44px; box-shadow:0 8px 20px rgba(37,99,235,.35); }
+    .btn-primary:hover { filter:brightness(1.05); }
+    .brand { display:flex; align-items:center; gap:10px; }
+    .brand .material-icons { color:#60a5fa; }
+    .container-narrow { width:100%; max-width:560px; padding:24px; }
+  </style>
+</head>
+<body>
+  <main class="container-narrow">
+    <div class="card z-depth-2">
+      <div class="card-content">
+        <div class="brand">
+          <span class="material-icons">chat_bubble_outline</span>
+          <span class="card-title">Django Chat</span>
+        </div>
+        <div class="subtitle">Login or create an account to start chatting.</div>
+        <div style="display:flex; gap:12px; margin-top:24px;">
+          <a class="btn btn-primary" href="/login/" style="flex:1;">Login</a>
+          <a class="btn" href="/register/" style="flex:1; border-radius:10px; background:#0f172a; border:1px solid rgba(255,255,255,.06); color:#e5e7eb;">Register</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  
+</body>
+</html>

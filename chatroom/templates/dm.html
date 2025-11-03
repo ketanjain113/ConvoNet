@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DM · {{peer}}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    :root { --bg:#0a0f1a; --panel:#0f1522; --text:#e6eaf2; --muted:#9aa6b2; --primary:#4f8cff; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui; }
+    .app{ max-width:900px; margin:0 auto; height:100vh; display:flex; flex-direction:column; }
+    .head{ display:flex; align-items:center; justify-content:space-between; padding:12px 10px; }
+    .messages{ flex:1; overflow:auto; padding:16px; }
+    .msg{ display:flex; align-items:flex-end; gap:10px; margin-bottom:12px; }
+    .msg.me{ justify-content:flex-end; }
+    .avatar{ width:32px; height:32px; border-radius:50%; background:#1f2937; display:flex; align-items:center; justify-content:center; font-size:12px; }
+    .bubble{ max-width:70%; background:var(--panel); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:10px 12px; }
+    .bubble.me{ background:linear-gradient(135deg,#4f8cff,#2f6bff); color:#fff; border-color:transparent; }
+    .composer{ position:sticky; bottom:0; background:var(--panel); display:flex; gap:8px; padding:12px; border-top:1px solid rgba(255,255,255,.06); }
+    .composer input{ flex:1; background:#0a0f1a; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px 12px; color:var(--text); }
+    .btn{ background:#4f8cff; border:none; color:#fff; border-radius:10px; padding:0 14px; height:42px; }
+    .upload{ width:42px; height:42px; display:flex; align-items:center; justify-content:center; background:#1f2937; border-radius:10px; cursor:pointer; }
+    img.thumb, video.thumb{ max-width:100%; border-radius:12px; margin-top:6px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="head">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <a href="/dashboard/" style="color:#9ab6ff;text-decoration:none;">← Inbox</a>
+        <strong>@{{peer}}</strong>
+      </div>
+      <div style="color:#9aa6b2;">You: {{me}}</div>
+    </div>
+    <div id="list" class="messages"></div>
+    <form id="send-form" class="composer">
+      {% csrf_token %}
+      <input id="text" placeholder="Message @{{peer}}" />
+      <label for="file" class="upload" title="Attach"><span class="material-icons">attach_file</span></label>
+      <input id="file" type="file" style="display:none;" accept="image/*,video/*,.pdf,.txt,.doc,.docx">
+      <button class="btn" type="submit"><span class="material-icons" style="vertical-align:middle;">send</span></button>
+    </form>
+  </div>
+
+  <script>
+    function render(items){
+      const you = '{{me}}';
+      const c = $('#list'); c.empty();
+      items.forEach(m => {
+        const me = m.user === you;
+        let body = m.value || '';
+        if (m.media_url) {
+          if ((m.media_type||'').startsWith('image')) body += (body?'\n':'') + `<img class="thumb" src="${m.media_url}">`;
+          else if ((m.media_type||'').startsWith('video')) body += (body?'\n':'') + `<video class="thumb" src="${m.media_url}" controls></video>`;
+          else body += (body?'\n':'') + `<a href="${m.media_url}" target="_blank">Download file</a>`;
+        }
+        const html = me
+          ? `<div class="msg me"><div class="bubble me">${body}</div><div class="avatar">ME</div></div>`
+          : `<div class="msg"><div class="avatar">@</div><div class="bubble">${body}</div></div>`;
+        c.append(html);
+      });
+      c.scrollTop(c.prop('scrollHeight'));
+    }
+
+    function load(){
+      $.getJSON('/dm/thread/{{peer}}/', function(r){ render(r.messages || []); });
+    }
+    setInterval(load, 1000);
+    load();
+
+    $('#send-form').on('submit', function(e){
+      e.preventDefault();
+      $.post('/dm/send', {
+        to: '{{peer}}',
+        message: $('#text').val(),
+        csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+      }, function(){ $('#text').val(''); });
+    });
+
+    $('#file').on('change', function(){
+      const f = this.files[0]; if(!f) return;
+      const fd = new FormData();
+      fd.append('to', '{{peer}}');
+      fd.append('file', f);
+      fd.append('csrfmiddlewaretoken', $('input[name=csrfmiddlewaretoken]').val());
+      $.ajax({ url:'/dm/send', method:'POST', data:fd, contentType:false, processData:false, success:()=>$('#file').val('') });
+    });
+  </script>
+</body>
+</html>
+
+
