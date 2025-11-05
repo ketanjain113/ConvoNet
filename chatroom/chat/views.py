@@ -3,11 +3,11 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from chat.mongo_models import RoomDoc, MessageDoc, TypingDoc, UserProfileDoc, DirectMessageDoc, FriendDoc
+from chatroom.chat.mongo_models import RoomDoc, MessageDoc, TypingDoc, UserProfileDoc, DirectMessageDoc, FriendDoc
 from datetime import datetime, timedelta
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
-from chat.crypto import encrypt_text, decrypt_text
+from chatroom.chat.crypto import encrypt_text, decrypt_text
 
 # Create your views here.
 def home(request):
@@ -219,7 +219,7 @@ def dm_thread(request, username):
 @login_required
 def dm_chat(request, username):
     # Page shell for a direct conversation; messages are fetched by AJAX from dm_thread
-    from chat.mongo_models import UserProfileDoc
+    from chatroom.chat.mongo_models import UserProfileDoc
     me_avatar = None
     peer_avatar = None
     try:
@@ -319,4 +319,5 @@ def get_typing(request, room):
     # Clean expired
     TypingDoc.objects(room=room_doc, expires_at__lt=datetime.utcnow()).delete()
     users = [t.user for t in TypingDoc.objects(room=room_doc)]
+
     return JsonResponse({"typing": users})
