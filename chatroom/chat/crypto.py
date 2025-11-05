@@ -11,8 +11,6 @@ def _get_fernet() -> Fernet:
         return _cached
     key = os.getenv('CHAT_ENC_KEY')
     if not key:
-        # Generate an ephemeral key if not provided; logs would be better, but avoid printing secrets
-        key = Fernet.generate_key().decode('utf-8')
         os.environ['CHAT_ENC_KEY'] = key
     _cached = Fernet(key.encode('utf-8'))
     return _cached
@@ -35,5 +33,6 @@ def decrypt_text(token: str) -> str:
     except Exception:
         # If decrypt fails (legacy plaintext), return as-is
         return token
+
 
 
