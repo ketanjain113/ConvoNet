@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-iy3+5*_3f#0g41m*1djph1b(n(v*@nc^k*2psu1xpckd2m20&x
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -137,3 +137,4 @@ connect(host=MONGODB_URI)
 MEDIA_URL = '/media/'
 
 MEDIA_ROOT = BASE_DIR / 'media'
+
