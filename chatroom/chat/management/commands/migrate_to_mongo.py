@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 
-from chat.models import Room as SqlRoom, Message as SqlMessage
-from chat.mongo_models import RoomDoc, MessageDoc
+from chatroom.chat.models import Room as SqlRoom, Message as SqlMessage
+from chatroom.chat.mongo_models import RoomDoc, MessageDoc
 
 
 class Command(BaseCommand):
@@ -42,5 +42,6 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"Messages migrated: {migrated}"))
 
         self.stdout.write(self.style.SUCCESS("Migration to MongoDB complete."))
+
 
 
