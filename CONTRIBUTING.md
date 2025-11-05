@@ -15,8 +15,9 @@ Thank you for your interest in contributing to ConvoNet! This guide will help yo
 3. This creates a copy of the repository in your GitHub account
 
 ### Step 2: Clone Your Fork
+Replace `<your-username>` with your actual GitHub username:
 ```bash
-git clone https://github.com/YOUR-USERNAME/ConvoNet.git
+git clone https://github.com/<your-username>/ConvoNet.git
 cd ConvoNet
 ```
 

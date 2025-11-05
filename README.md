@@ -30,6 +30,9 @@ ConvoNet is a Django-based web application that enables real-time chat functiona
 2. Install dependencies:
    ```bash
    pip install django
+   # Install additional dependencies as needed
+   # For production, check if there's a requirements.txt file:
+   # pip install -r requirements.txt
    ```
 
 3. Run migrations:
