@@ -130,7 +130,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # MongoDB (MongoEngine) connection
 # Use env var MONGODB_URI or default to local MongoDB
-MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/chatroom')
+MONGODB_URI = os.environ.get("MONGODB_URI")
 connect(host=MONGODB_URI)
 
 # Media (uploads)
@@ -141,5 +141,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 CSRF_TRUSTED_ORIGINS = [
     "https://convonet-production.up.railway.app"
 ]
+
 
 
