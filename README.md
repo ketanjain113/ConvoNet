@@ -1,32 +1,113 @@
-# ConvoNet / Chatroom Railway Deployment
+# 💬 ConvoNet
 
-## Railway Deployment Instructions
+**ConvoNet** is a real-time chatroom application built with **Django**, **MongoDB**, and **WebSockets**, designed for seamless interaction.
+It supports **login & authentication**, **friend-based DMs**, and **room-based conversations** where users can join using a **room name**.
+An integrated **encryption layer** ensures secure communication between users.
 
-1. **Push your code to GitHub** (already done).
+---
 
-2. **Create a new Railway project:**
-   - Click "New Project" > "Deploy from GitHub repo" and select this repository.
+## 🚀 Features
 
-3. **Set Environment Variables**
-   - Add a new variable: `MONGODB_URI`
-   - Value: Your MongoDB connection string from MongoDB Atlas. Example:
-     ```
-     mongodb+srv://<user>:<password>@<cluster>.mongodb.net/chatroom?retryWrites=true&w=majority
-     ```
+### 🔐 Authentication & User Management
 
-4. **MongoDB Setup:**
-   - Make sure a database and user exist on MongoDB Atlas (or elsewhere), and grant access to `chatroom` or desired database.
-   - Get your MongoDB cluster connection URI from MongoDB Atlas dashboard.
+* Secure login and signup system
+* Persistent user sessions
+* User profiles stored in MongoDB
 
-5. **Deploy**
-   - Railway will auto-install dependencies from `requirements.txt` and use the `Procfile` to start your server.
+### 💬 Chat System
 
-6. **Visit Your Web App**
-   - After build completes, Railway gives you a public URL.
+* Real-time messaging using Django Channels or WebSockets
+* Room-based chats — join or create chatrooms by simply entering a room name
+* Friend-based DM feature for one-on-one conversations
 
-## Environment variables
-- `MONGODB_URI` — connection string for your MongoDB instance.
+### 🧩 Encryption Layer
 
-## Notes
-- By default, Django admin is enabled. For production, lock down admin route, set `DEBUG = False`, and fix up `ALLOWED_HOSTS` in your settings.
-- For custom domains, see Railway documentation.
+* Messages are encrypted using a custom **crypto key** before transmission
+* Ensures data privacy during message exchange
+
+---
+
+## ⚙️ Tech Stack
+
+| Layer          | Technology                              |
+| -------------- | --------------------------------------- |
+| **Backend**    | Django, Django Channels                 |
+| **Database**   | MongoDB (Atlas)                         |
+| **Frontend**   | HTML, CSS, JavaScript                   |
+| **Server**     | Gunicorn + Railway Deployment           |
+| **Encryption** | Python’s `cryptography` module (Fernet) |
+
+---
+
+## 🏗️ Setup & Installation
+
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/<your-username>/ConvoNet.git
+   cd ConvoNet
+   ```
+
+2. **Create and activate virtual environment**
+
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # or venv\Scripts\activate on Windows
+   ```
+
+3. **Install dependencies**
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**
+   Create a `.env` file in the project root:
+
+   ```env
+   SECRET_KEY=your_django_secret_key
+   CRYPTO_KEY=your_crypto_key
+   MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/?appName=ConvoNet
+   DEBUG=True
+   ```
+
+5. **Run the server**
+
+   ```bash
+   python manage.py runserver
+   ```
+
+---
+
+## 🌐 Deployment
+
+* Deployed on **Railway.app** using Gunicorn
+* Procfile configuration:
+
+  ```
+  web: gunicorn chatroom.chatroom.wsgi:application --bind 0.0.0.0:$PORT
+  ```
+
+---
+
+## 🛡️ Security Notes
+
+* Keep your `SECRET_KEY` and `CRYPTO_KEY` in environment variables (not hardcoded).
+* Never commit `.env` or database credentials to GitHub.
+* MongoDB Atlas is recommended over localhost for production.
+
+---
+
+## 🔮 Future Enhancements
+
+* Add real-time notifications
+* File sharing in chat
+* DM bubble notifications 
+* Group management and admin controls
+
+---
+
+## 👨‍💻 Author
+
+**Ketan Jain**
+Project: ConvoNet — Secure, Scalable Chatrooms for Everyone.
