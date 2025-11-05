@@ -52,7 +52,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'chatroom.urls'
+ROOT_URLCONF = 'chatroom.chatroom.urls'
 
 TEMPLATES = [
     {
@@ -69,7 +69,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'chatroom.wsgi.application'
+WSGI_APPLICATION = 'chatroom.chatroom.wsgi.application'
 
 
 # Database
@@ -137,4 +137,5 @@ connect(host=MONGODB_URI)
 MEDIA_URL = '/media/'
 
 MEDIA_ROOT = BASE_DIR / 'media'
+
 
