@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'chat'
+    'chatroom.chat'
 ]
 
 MIDDLEWARE = [
@@ -135,4 +135,5 @@ connect(host=MONGODB_URI)
 
 # Media (uploads)
 MEDIA_URL = '/media/'
+
 MEDIA_ROOT = BASE_DIR / 'media'
