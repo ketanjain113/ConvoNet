@@ -113,7 +113,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-
+CRYPTO_KEY = 'xx1jHdt6NbL_UXLgLtCbyQGD9jq5K9Vwv3HHxeqaXpg='
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 

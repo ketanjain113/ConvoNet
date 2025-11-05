@@ -100,7 +100,12 @@ def dashboard(request):
             'avatar_url': prof.avatar_url if prof else None,
             'unread': unread_map.get(fu, 0)
         })
-    return render(request, 'dashboard.html', {"rooms": room_names, "friends": friends})
+    # Get current user's avatar
+    my_avatar = None
+    my_profile = UserProfileDoc.objects(username=request.user.username).first()
+    if my_profile:
+        my_avatar = my_profile.avatar_url
+    return render(request, 'dashboard.html', {"rooms": room_names, "friends": friends, "my_avatar": my_avatar})
 
 
 @login_required
@@ -174,7 +179,16 @@ def dm_inbox(request):
     unread = {}
     for p in partners:
         unread[p] = DirectMessageDoc.objects(sender=p, recipient=request.user.username, unread='1').count()
-    return render(request, 'dm_inbox.html', {"partners": sorted(list(partners)), "unread": unread})
+    # Get avatars
+    profiles = {p.username: p.avatar_url for p in UserProfileDoc.objects(username__in=list(partners))}
+    partners_avatars = {}
+    for p in partners:
+        partners_avatars[p] = profiles.get(p)
+    return render(request, 'dm_inbox.html', {
+        "partners": sorted(list(partners)),
+        "unread": unread,
+        "partners_avatars": partners_avatars,
+    })
 
 
 @login_required
@@ -205,9 +219,24 @@ def dm_thread(request, username):
 @login_required
 def dm_chat(request, username):
     # Page shell for a direct conversation; messages are fetched by AJAX from dm_thread
+    from chat.mongo_models import UserProfileDoc
+    me_avatar = None
+    peer_avatar = None
+    try:
+        me_profile = UserProfileDoc.objects.get(username=request.user.username)
+        me_avatar = me_profile.avatar_url
+    except Exception:
+        pass
+    try:
+        peer_profile = UserProfileDoc.objects.get(username=username)
+        peer_avatar = peer_profile.avatar_url
+    except Exception:
+        pass
     return render(request, 'dm.html', {
         "me": request.user.username,
         "peer": username,
+        "me_avatar": me_avatar,
+        "peer_avatar": peer_avatar,
     })
 
 

@@ -3,43 +3,141 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Chatroom</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <title>ConvoNet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   
   <style>
-    :root { --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --primary:#3b82f6; }
-    html, body { height:100%; }
-    body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:linear-gradient(180deg, #0b1220, #0f172a); color:var(--text); display:flex; align-items:center; justify-content:center; }
-    .card { background:linear-gradient(180deg, #0f172a, #0b1020); border-radius:16px; border:1px solid rgba(255,255,255,0.06); box-shadow:0 10px 30px rgba(0,0,0,.35); overflow:hidden; }
-    .card-title { display:flex; align-items:center; gap:10px; font-weight:600; }
-    .subtitle { color:var(--muted); font-size:0.95rem; margin-top:4px; }
-    .input-field input { color:var(--text); }
-    .input-field input:focus { border-bottom:1px solid var(--primary) !important; box-shadow:0 1px 0 0 var(--primary) !important; }
-    .btn-primary { background:linear-gradient(135deg, #3b82f6, #2563eb); border-radius:10px; text-transform:none; height:44px; line-height:44px; box-shadow:0 8px 20px rgba(37,99,235,.35); }
-    .btn-primary:hover { filter:brightness(1.05); }
-    .brand { display:flex; align-items:center; gap:10px; }
-    .brand .material-icons { color:#60a5fa; }
-    .container-narrow { width:100%; max-width:560px; padding:24px; }
+    :root {
+      /* New "Cyber Blue" theme */
+      --bg-gradient: linear-gradient(180deg, #10182E 0%, #0B0F1A 100%);
+      --panel-bg: rgba(255, 255, 255, 0.05); /* Translucent glass effect */
+      --text-color: #E0E0E0;
+      --muted-text-color: #888888;
+      --primary-gradient: linear-gradient(135deg, #00BFFF, #008C9E); /* Cyan/Teal gradient */
+      --primary-hover-gradient: linear-gradient(135deg, #00D5FF, #00AABF);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --input-bg: rgba(0, 0, 0, 0.3);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --transition: all 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    html, body { 
+      height: 100%; 
+      margin: 0;
+    }
+    body { 
+      font-family: 'Inter', system-ui; 
+      background: var(--bg-gradient);
+      color: var(--text-color); 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      padding: 16px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .card { 
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: var(--radius-lg); 
+      box-shadow: var(--shadow); 
+      overflow: hidden; 
+      animation: fadeIn 0.6s ease-out;
+    }
+    .card-content { padding: 32px; text-align:center; }
+    .brand { 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      gap: 12px; 
+      font-weight: 700; 
+      font-size: 1.75rem;
+    }
+    .brand .material-icons { 
+      font-size: 36px;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { 
+      color: var(--muted-text-color); 
+      font-size: 1rem; 
+      margin-top: 25px; 
+      margin-left: 34px;
+      margin-bottom: 24px;
+      max-width: 300px;
+    }
+    .btn, .btn-primary, .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 0 24px;
+      height: 48px;
+      font-weight: 600;
+      font-family: 'Inter', system-ui;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      flex: 1;
+      font-size: 1rem;
+    }
+    .btn-primary {
+      background: var(--primary-gradient);
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover-gradient);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0, 191, 255, 0.2);
+    }
+    .btn-primary:active {
+      transform: scale(0.97);
+    }
+    .btn-secondary {
+      background: var(--input-bg);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+    .btn-secondary:active {
+      transform: scale(0.97);
+    }
+    .container-narrow { 
+      width: 100%; 
+      max-width: 440px; 
+    }
   </style>
 </head>
 <body>
   <main class="container-narrow">
-    <div class="card z-depth-2">
+    <div class="card">
       <div class="card-content">
         <div class="brand">
-          <span class="material-icons">chat_bubble_outline</span>
-          <span class="card-title">Django Chat</span>
+          <span class="material-icons">maps_ugc</span>
+          <span>ConvoNet</span>
         </div>
         <div class="subtitle">Login or create an account to start chatting.</div>
         <div style="display:flex; gap:12px; margin-top:24px;">
-          <a class="btn btn-primary" href="/login/" style="flex:1;">Login</a>
-          <a class="btn" href="/register/" style="flex:1; border-radius:10px; background:#0f172a; border:1px solid rgba(255,255,255,.06); color:#e5e7eb;">Register</a>
+          <a class="btn btn-primary" href="/login/">Login</a>
+          <a class="btn btn-secondary" href="/register/">Register</a>
         </div>
       </div>
     </div>
   </main>
-
-  
 </body>
 </html>

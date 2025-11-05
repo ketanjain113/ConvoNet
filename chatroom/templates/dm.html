@@ -3,62 +3,261 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DM · {{peer}}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <title>ConvoNet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <style>
-    :root { --bg:#0a0f1a; --panel:#0f1522; --text:#e6eaf2; --muted:#9aa6b2; --primary:#4f8cff; }
-    body { margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui; }
+    :root {
+      /* New "Cyber Blue" theme */
+      --bg-gradient: linear-gradient(180deg, #10182E 0%, #0B0F1A 100%);
+      --panel-bg: rgba(255, 255, 255, 0.05); /* Translucent glass effect */
+      --bubble-peer-bg: rgba(255, 255, 255, 0.08); /* Other user's bubble */
+      --text-color: #E0E0E0;
+      --muted-text-color: #888888;
+      --primary-gradient: linear-gradient(135deg, #00BFFF, #008C9E); /* Cyan/Teal gradient */
+      --primary-hover-gradient: linear-gradient(135deg, #00D5FF, #00AABF);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-pill: 999px;
+      --transition: all 0.3s ease;
+    }
+    body { 
+      margin:0; 
+      background:var(--bg-gradient); 
+      color:var(--text-color); 
+      font-family:'Inter',system-ui; 
+      font-size: 0.95rem;
+    }
     .app{ max-width:900px; margin:0 auto; height:100vh; display:flex; flex-direction:column; }
-    .head{ display:flex; align-items:center; justify-content:space-between; padding:12px 10px; }
+    .head{ 
+      display:flex; 
+      align-items:center; 
+      justify-content:space-between; 
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--panel-bg);
+      backdrop-filter: blur(20px);
+      box-shadow: var(--shadow);
+      z-index: 10;
+      border-radius: var(--radius-md) var(--radius-md) var(--radius-md) var(--radius-md);
+      margin-top: 8px;
+    }
+    .head-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+    .avatar-inline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.3);
+      color: var(--text-color);
+      font-size: 12px;
+      font-weight: 600;
+    }
     .messages{ flex:1; overflow:auto; padding:16px; }
     .msg{ display:flex; align-items:flex-end; gap:10px; margin-bottom:12px; }
     .msg.me{ justify-content:flex-end; }
-    .avatar{ width:32px; height:32px; border-radius:50%; background:#1f2937; display:flex; align-items:center; justify-content:center; font-size:12px; }
-    .bubble{ max-width:70%; background:var(--panel); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:10px 12px; }
-    .bubble.me{ background:linear-gradient(135deg,#4f8cff,#2f6bff); color:#fff; border-color:transparent; }
-    .composer{ position:sticky; bottom:0; background:var(--panel); display:flex; gap:8px; padding:12px; border-top:1px solid rgba(255,255,255,.06); }
-    .composer input{ flex:1; background:#0a0f1a; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px 12px; color:var(--text); }
-    .btn{ background:#4f8cff; border:none; color:#fff; border-radius:10px; padding:0 14px; height:42px; }
-    .upload{ width:42px; height:42px; display:flex; align-items:center; justify-content:center; background:#1f2937; border-radius:10px; cursor:pointer; }
-    img.thumb, video.thumb{ max-width:100%; border-radius:12px; margin-top:6px; }
+    .avatar{ 
+      width:36px; 
+      height:36px; 
+      border-radius:50%; 
+      background: rgba(0,0,0,0.3);
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      font-size:12px;
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+    }
+    /* "Their" bubble - Glassmorphism */
+    .bubble{ 
+      max-width:70%; 
+      background: var(--bubble-peer-bg);
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(10px);
+      border-radius:var(--radius-md); 
+      padding:10px 14px; 
+      line-height: 1.5;
+    }
+    /* "My" bubble - Solid Gradient */
+    .bubble.me{ 
+      background:var(--primary-gradient); 
+      color:#fff; 
+      border-color:transparent;
+      backdrop-filter: none;
+    }
+
+    /* --- COMPOSER FIX --- */
+    /* This is the new composer matching the reference */
+    .composer{ 
+      position:sticky; 
+      bottom:0; 
+      padding: 12px; 
+      border-top: 1px solid var(--border-color);
+      background: var(--panel-bg);
+      backdrop-filter: blur(20px);
+      border-radius: var(--radius-md) var(--radius-md) var(--radius-md) var(--radius-md);
+      margin-bottom: 8px;
+    }
+    .composer-inner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--input-bg); /* Dark inset bar */
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-pill); /* Pill shape */
+      padding: 6px;
+    }
+    .composer-inner input#text { 
+      flex:1; 
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 0 8px;
+      color: var(--text-color);
+      font-family: 'Inter', system-ui;
+      height: 44px;
+      font-size: 1rem;
+    }
+    .btn-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      cursor: pointer;
+      transition: var(--transition);
+      background: transparent;
+      color: var(--muted-text-color);
+    }
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-color);
+    }
+    /* Send button */
+    .btn-send {
+      background: var(--primary-gradient);
+      color: #ffffff;
+    }
+    .btn-send:hover {
+      background: var(--primary-hover-gradient);
+    }
+    .btn-send:active {
+      transform: scale(0.95);
+    }
+    /* --- END COMPOSER FIX --- */
+
+    img.thumb, video.thumb{ 
+      max-width:100%; 
+      border-radius:12px; 
+      margin-top:6px; 
+    }
+    a.back-link {
+        color: var(--muted-text-color);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        background: none;
+        -webkit-background-clip: initial;
+        -webkit-text-fill-color: initial;
+    }
+    a.back-link:hover {
+        color: var(--text-color);
+        opacity: 1;
+    }
   </style>
 </head>
 <body>
   <div class="app">
     <div class="head">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <a href="/dashboard/" style="color:#9ab6ff;text-decoration:none;">← Inbox</a>
-        <strong>@{{peer}}</strong>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <a href="/dashboard/" class="back-link">
+          <span class="material-icons" style="font-size:20px;">arrow_back_ios</span>
+          <span>Inbox</span>
+        </a>
+        <div class="head-user">
+          {% if peer_avatar %}
+            <img class="avatar-inline" src="{{ peer_avatar }}" alt="{{ peer }}" style="width:28px;height:28px;object-fit:cover;border-radius:50%;"/>
+          {% else %}
+            <div class="avatar-inline material-icons" style="font-size:16px;">person</div>
+          {% endif %}
+          <strong>@{{peer}}</strong>
+        </div>
       </div>
-      <div style="color:#9aa6b2;">You: {{me}}</div>
+      <div class="head-user" style="color:var(--muted-text-color); font-weight: 500;">
+        <span>You: {{me}}</span>
+        {% if me_avatar %}
+          <img class="avatar-inline" src="{{ me_avatar }}" alt="{{ me }}" style="width:28px;height:28px;object-fit:cover;border-radius:50%;margin-left:4px;"/>
+        {% else %}
+          <div class="avatar-inline material-icons" style="font-size:16px; margin-left: 4px;">account_circle</div>
+        {% endif %}
+      </div>
     </div>
     <div id="list" class="messages"></div>
+
     <form id="send-form" class="composer">
       {% csrf_token %}
-      <input id="text" placeholder="Message @{{peer}}" />
-      <label for="file" class="upload" title="Attach"><span class="material-icons">attach_file</span></label>
-      <input id="file" type="file" style="display:none;" accept="image/*,video/*,.pdf,.txt,.doc,.docx">
-      <button class="btn" type="submit"><span class="material-icons" style="vertical-align:middle;">send</span></button>
+      <div class="composer-inner">
+        <label for="file" class="btn-icon" title="Attach">
+          <span class="material-icons">attach_file</span>
+        </label>
+        <input id="file" type="file" style="display:none;" accept="image/*,video/*,.pdf,.txt,.doc,.docx">
+        
+        <input id="text" placeholder="Type here..." autocomplete="off" />
+        
+        <button class="btn-icon btn-send" type="submit">
+          <span class="material-icons" style="vertical-align:middle;">send</span>
+        </button>
+      </div>
     </form>
-  </div>
+    </div>
 
   <script>
     function render(items){
       const you = '{{me}}';
+      const meAvatar = '{{ me_avatar|default:"" }}';
+      const peerAvatar = '{{ peer_avatar|default:"" }}';
       const c = $('#list'); c.empty();
+      function formatDate(dateStr) {
+        const d = new Date(dateStr);
+        const pad = n => n < 10 ? '0'+n : n;
+        return pad(d.getDate()) + '/' + pad(d.getMonth()+1) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+      }
       items.forEach(m => {
         const me = m.user === you;
         let body = m.value || '';
         if (m.media_url) {
-          if ((m.media_type||'').startsWith('image')) body += (body?'\n':'') + `<img class="thumb" src="${m.media_url}">`;
-          else if ((m.media_type||'').startsWith('video')) body += (body?'\n':'') + `<video class="thumb" src="${m.media_url}" controls></video>`;
-          else body += (body?'\n':'') + `<a href="${m.media_url}" target="_blank">Download file</a>`;
+          if ((m.media_type||'').startsWith('image')) body += (body?'<br>':'') + `<img class="thumb" src="${m.media_url}">`;
+          else if ((m.media_type||'').startsWith('video')) body += (body?'<br>':'') + `<video class="thumb" src="${m.media_url}" controls></video>`;
+          else body += (body?'<br>':'') + `<a href="${m.media_url}" target="_blank" style="color: ${me ? '#fff' : '#00BFFF'}; text-decoration: underline;">Download file</a>`;
         }
+        const bodyText = $('<textarea />').html(body).text();
+        const finalBody = bodyText.replace(/\n/g, '<br>').replace(body, body);
+        // Avatar for msg sender
+        let avatarHtml;
+        if(me) {
+          avatarHtml = meAvatar ? `<img class="avatar" src="${meAvatar}" alt="me">` : '<div class="avatar"><span class="material-icons" style="font-size:18px;">account_circle</span></div>';
+        } else {
+          avatarHtml = peerAvatar ? `<img class="avatar" src="${peerAvatar}" alt="peer">` : '<div class="avatar"><span class="material-icons" style="font-size:18px;">person</span></div>';
+        }
+        // Format the meta section to include formatted date if present
+        const metaHtml = m.date ? `<div class="meta"><span>${m.user}</span><span>${formatDate(m.date)}</span></div>` : `<div class="meta"><span>${m.user}</span></div>`;
         const html = me
-          ? `<div class="msg me"><div class="bubble me">${body}</div><div class="avatar">ME</div></div>`
-          : `<div class="msg"><div class="avatar">@</div><div class="bubble">${body}</div></div>`;
+          ? `<div class="msg me"><div class="bubble me">${metaHtml}<div class="body">${finalBody}</div></div>${avatarHtml}</div>`
+          : `<div class="msg">${avatarHtml}<div class="bubble">${metaHtml}<div class="body">${finalBody}</div></div></div>`;
         c.append(html);
       });
       c.scrollTop(c.prop('scrollHeight'));
@@ -90,5 +289,3 @@
   </script>
 </body>
 </html>
-
-

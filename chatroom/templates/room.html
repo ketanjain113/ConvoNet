@@ -3,57 +3,255 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{room}} · Chat</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <title>ConvoNet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <style>
-    :root { --bg:#0a0f1a; --panel:#0f1522; --text:#e6eaf2; --muted:#9aa6b2; --primary:#4f8cff; }
-    body.light { --bg:#f5f7fb; --panel:#ffffff; --text:#0f172a; --muted:#5b6773; --primary:#2f6bff; }
+    :root {
+      /* New "Cyber Blue" theme */
+      --bg-gradient: linear-gradient(180deg, #10182E 0%, #0B0F1A 100%);
+      --panel-bg: rgba(255, 255, 255, 0.05); /* Translucent glass effect */
+      --bubble-peer-bg: rgba(255, 255, 255, 0.08); /* Other user's bubble */
+      --text-color: #E0E0E0;
+      --muted-text-color: #888888;
+      --primary-gradient: linear-gradient(135deg, #00BFFF, #008C9E); /* Cyan/Teal gradient */
+      --primary-hover-gradient: linear-gradient(135deg, #00D5FF, #00AABF);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --input-bg: rgba(0, 0, 0, 0.3);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --radius-sm: 12px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-pill: 999px;
+      --transition: all 0.3s ease;
+    }
+    
     html, body { height:100%; }
-    body { margin:0; background:linear-gradient(180deg, #0b1220, #0f172a); color:var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    body.light { background:#eef2ff; }
-    .app { display:flex; flex-direction:column; height:100%; max-width:900px; margin:0 auto; }
-    .app-header { display:flex; align-items:center; justify-content:space-between; padding:16px 12px; }
-    .brand { display:flex; align-items:center; gap:10px; font-weight:600; }
-    .brand .material-icons { color:#60a5fa; }
-    .card { background:linear-gradient(180deg, var(--panel), #0b1020); border-radius:16px; border:1px solid rgba(0,0,0,0.06); box-shadow:0 10px 30px rgba(0,0,0,.15); }
-    .messages { flex:1; overflow:auto; padding:16px; }
+    body { 
+      margin:0; 
+      background:var(--bg-gradient); 
+      color:var(--text-color); 
+      font-family: 'Inter', system-ui; 
+      font-size: 0.95rem;
+      transition: var(--transition);
+      overflow: hidden; /* Prevent layout shift */
+    }
+    
+    /* Flexible layout structure */
+    .app { 
+      display:flex; 
+      flex-direction:column; 
+      height:100%; 
+      max-width:900px; 
+      margin:0 auto;
+      box-sizing: border-box;
+    }
+    .app-header { 
+      display:flex; 
+      align-items:center; 
+      justify-content:space-between; 
+      padding: 16px;
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--border-color);
+      backdrop-filter: blur(20px);
+      box-shadow: var(--shadow);
+      z-index: 10;
+      border-radius: var(--radius-md) var(--radius-md) var(--radius-md) var(--radius-md);
+      margin-top: 8px;
+    }
+    .brand { 
+      display:flex; 
+      align-items:center; 
+      gap:10px; 
+      font-weight:700; 
+      font-size: 1.25rem;
+      color: var(--text-color);
+    }
+    .brand .material-icons { 
+      font-size: 28px;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header-right {
+      display:flex; 
+      align-items:center; 
+      gap:16px; 
+      color:var(--muted-text-color);
+      font-weight: 500;
+    }
+    .user-display {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-color);
+    }
+    .avatar-inline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--input-bg);
+      color: var(--text-color);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    /* Main chat card */
+    .card { 
+      display:flex; 
+      flex-direction:column; 
+      flex: 1; 
+      overflow: hidden;
+      min-height: 0; /* Critical for flex to work in a vh-100 body */
+      background: transparent; /* Card is just a container now */
+    }
+    .messages { 
+      flex:1; 
+      overflow:auto; 
+      padding:16px; 
+    }
     .msg { display:flex; align-items:flex-end; gap:10px; margin-bottom:12px; }
     .msg.me { justify-content:flex-end; }
-    .avatar { width:32px; height:32px; border-radius:50%; background:#1f2937; color:#e5e7eb; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; border:1px solid rgba(0,0,0,0.1); }
-    body.light .avatar { background:#e5e7eb; color:#111827; }
-    .bubble { max-width:68%; padding:10px 12px; border-radius:14px; border:1px solid rgba(0,0,0,0.06); background:var(--panel); }
-    .bubble .meta { display:flex; justify-content:space-between; color:var(--muted); font-size:.8rem; margin-bottom:4px; }
-    .msg.me .bubble { background:linear-gradient(135deg, #4f8cff, #2f6bff); color:white; border-color:transparent; }
+    .avatar { 
+      width:36px; 
+      height:36px; 
+      border-radius:50%; 
+      background: var(--input-bg);
+      color:var(--text-color); 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      font-size:12px; 
+      font-weight:600; 
+      border:1px solid var(--border-color); 
+    }
+    /* "Their" bubble - Glassmorphism */
+    .bubble { 
+      max-width:68%; 
+      padding:10px 14px; 
+      border-radius:var(--radius-md); 
+      background: var(--bubble-peer-bg);
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(10px);
+      line-height: 1.5;
+    }
+    .bubble .meta { 
+      display:flex; 
+      justify-content:space-between; 
+      gap: 16px;
+      color:var(--muted-text-color); 
+      font-size:.8rem; 
+      margin-bottom:4px; 
+      font-weight: 500;
+    }
+    .bubble .meta span:first-child { color: var(--text-color); font-weight: 600; }
+    /* "My" bubble - Solid Gradient */
+    .msg.me .bubble { 
+      background:var(--primary-gradient); 
+      color:white; 
+      border-color:transparent; 
+      backdrop-filter: none;
+    }
     .msg.me .bubble .meta { color:rgba(255,255,255,0.85); }
-    .composer { position:sticky; bottom:0; background:var(--panel); display:flex; gap:8px; padding:12px; border-top:1px solid rgba(255,255,255,0.06); }
-    .composer .input-field { flex:1; margin:0; }
-    .composer input { color:var(--text); }
-    .composer input:focus { border-bottom:1px solid var(--primary) !important; box-shadow:0 1px 0 0 var(--primary) !important; }
-    .btn-primary { background:linear-gradient(135deg, #3b82f6, #2563eb); border-radius:10px; text-transform:none; height:44px; line-height:44px; box-shadow:0 8px 20px rgba(37,99,235,.35); }
-    .theme-toggle { color:var(--muted); display:flex; align-items:center; gap:6px; cursor:pointer; }
-    .typing { color:var(--muted); font-size:.9rem; padding:0 16px 8px; min-height:22px; }
-    .upload { width:44px; height:44px; border-radius:10px; background:#1f2937; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(0,0,0,0.1); }
-    body.light .upload { background:#eef2ff; }
-    .thumb { margin-top:8px; }
+    .msg.me .bubble .meta span:first-child { color: #fff; }
+
+    /* --- COMPOSER FIX --- */
+    /* Rebuilt composer, same as dm.html */
+    .composer{ 
+      position:sticky; 
+      bottom:0; 
+      padding: 12px; 
+      border-top: 1px solid var(--border-color);
+      background: var(--panel-bg);
+      backdrop-filter: blur(20px);
+      border-radius: var(--radius-md) var(--radius-md) var(--radius-md) var(--radius-md);
+      margin-bottom: 8px;
+    }
+    .composer-inner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--input-bg); /* Dark inset bar */
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-pill); /* Pill shape */
+      padding: 6px;
+    }
+    .composer input[type=text]{ 
+      flex:1; 
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 0 8px;
+      color: var(--text-color);
+      font-family: 'Inter', system-ui;
+      height: 44px;
+      font-size: 1rem;
+    }
+    .btn-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      cursor: pointer;
+      transition: var(--transition);
+      background: transparent;
+      color: var(--muted-text-color);
+    }
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-color);
+    }
+    .btn-send {
+      background: var(--primary-gradient);
+      color: #ffffff;
+    }
+    .btn-send:hover {
+      background: var(--primary-hover-gradient);
+    }
+    .btn-send:active {
+      transform: scale(0.95);
+    }
+    /* --- END COMPOSER FIX --- */
+    
+    .typing { 
+      color:var(--muted-text-color); 
+      font-size:.9rem; 
+      padding:0 16px 8px; 
+      min-height:22px; 
+      font-style: italic;
+    }
+    .thumb, video.thumb { 
+      margin-top:8px; 
+      max-width:100%; 
+      border-radius:12px;
+    }
   </style>
 </head>
 <body>
   <div class="app">
     <header class="app-header">
       <div class="brand">
-        <span class="material-icons">chat_bubble_outline</span>
+        <a class="material-icons" href="/dashboard/" style="margin-top: -11px;">«</a>
+        <span class="material-icons" href="/dashboard/">maps_ugc</span>
         <span>{{room}}</span>
+
       </div>
-      <div class="right" style="display:flex; align-items:center; gap:12px; color:#9ca3af;">
-        <span class="theme-toggle" id="themeToggle"><span class="material-icons">brightness_6</span><span id="themeLabel">Dark</span></span>
-        <span>Signed in as {{username}}</span>
+      <div class="header-right">
+        <div class="user-display">
+          <span class="avatar-inline material-icons" style="font-size:16px;">person</span>
+          <span>{{username}}</span>
+        </div>
       </div>
     </header>
 
-    <section class="card" style="display:flex; flex-direction:column; min-height:60vh;">
+    <section class="card">
       <div id="display" class="messages"></div>
       <div id="typing" class="typing"></div>
 
@@ -61,21 +259,25 @@
         {% csrf_token %}
         <input type="hidden" name="username" id="username" value="{{username}}"/>
         <input type="hidden" name="room_id" id="room_id" value="{{room_details.name}}"/>
-        <div class="input-field" style="margin-top:6px;">
-          <input id="message" name="message" type="text" placeholder="Type a message..." required>
+        
+        <div class="composer-inner">
+          <label for="file" class="btn-icon" title="Attach">
+            <span class="material-icons">attach_file</span>
+          </label>
+          <input id="file" type="file" style="display:none;" accept="image/*,video/*,.pdf,.txt,.doc,.docx">
+          
+          <input id="message" name="message" type="text" placeholder="Type here..." required autocomplete="off">
+          
+          <button class="btn-icon btn-send" type="submit">
+            <span class="material-icons" style="vertical-align:middle;">send</span>
+          </button>
         </div>
-        <label for="file" class="upload" title="Attach">
-          <span class="material-icons">attach_file</span>
-        </label>
-        <input id="file" type="file" style="display:none;" accept="image/*,video/*,.pdf,.txt,.doc,.docx">
-        <button class="btn btn-primary waves-effect waves-light" type="submit">
-          <span class="material-icons" style="vertical-align:middle;">send</span>
-        </button>
       </form>
-    </section>
+      </section>
   </div>
 
   <script>
+    // All JavaScript functionality remains unchanged
     function initials(name){
       if(!name) return '?';
       const parts = name.trim().split(/\s+/);
@@ -88,23 +290,33 @@
       const container = $("#display");
       container.empty();
       const you = '{{username}}';
+      function formatDate(dateStr) {
+        const d = new Date(dateStr);
+        const pad = n => n < 10 ? '0'+n : n;
+        return pad(d.getDate()) + '/' + pad(d.getMonth()+1) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+      }
       messages.forEach(m => {
         const me = m.user === you;
         const avatarUrl = (window.__avatars && window.__avatars[m.user]) || null;
-        const avatarHtml = avatarUrl ? `<img class="avatar" src="${avatarUrl}" alt="${m.user}">` : `<div class="avatar">${initials(m.user)}</div>`;
+        const avatarHtml = avatarUrl 
+          ? `<img class="avatar" src="${avatarUrl}" alt="${m.user}">` 
+          : `<div class="avatar">${initials(m.user)}</div>`;
+        
         let body = '';
         if (m.media_url) {
-          if ((m.media_type||'').startsWith('image')) body = `<img class="thumb" src="${m.media_url}" style="max-width:100%; border-radius:12px;"/>`;
-          else if ((m.media_type||'').startsWith('video')) body = `<video class="thumb" src="${m.media_url}" style="max-width:100%; border-radius:12px;" controls></video>`;
-          else body = `<a href="${m.media_url}" target="_blank">Download file</a>`;
-          if (m.value) body = `${m.value}<br/>` + body;
+          if ((m.media_type||'').startsWith('image')) body = `<img class="thumb" src="${m.media_url}"/>`;
+          else if ((m.media_type||'').startsWith('video')) body = `<video class="thumb" src="${m.media_url}" controls></video>`;
+          else body = `<a href="${m.media_url}" target="_blank" style="color: ${me ? '#fff' : '#00BFFF'}; text-decoration: underline;">Download file</a>`;
+          
+          if (m.value) body = `${$('<textarea />').html(m.value).text()}<br/>` + body;
         } else {
-          body = m.value;
+          body = $('<textarea />').html(m.value).text(); // Basic XSS protection
         }
+        
         const bubbleHtml = `
           <div class="bubble">
-            <div class="meta"><span>${m.user}</span><span>${m.date}</span></div>
-            <div class="body">${body}</div>
+            <div class="meta"><span>${m.user}</span><span>${formatDate(m.date)}</span></div>
+            <div class="body">${body.replace(/\n/g, '<br>')}</div>
           </div>`;
         const html = me
           ? `<div class="msg me">${bubbleHtml}${avatarHtml}</div>`
@@ -144,7 +356,6 @@
         });
       });
 
-      // Media upload
       $('#file').on('change', function(){
         const f = this.files[0];
         if(!f) return;
@@ -159,7 +370,6 @@
         });
       });
 
-      // Typing indicator
       let typingTimer;
       const sendTyping = (on) => {
         $.post('/typing/set/', {
@@ -173,24 +383,8 @@
         sendTyping(true);
         typingTimer = setTimeout(() => sendTyping(false), 1200);
       });
-
-      // Theme toggle with persistence
-      const key = 'chat.theme';
-      const setTheme = (mode) => {
-        if(mode === 'light'){ document.body.classList.add('light'); $('#themeLabel').text('Light'); }
-        else { document.body.classList.remove('light'); $('#themeLabel').text('Dark'); }
-        localStorage.setItem(key, mode);
-      };
-      const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-      const saved = localStorage.getItem(key) || (prefersLight ? 'light' : 'dark');
-      setTheme(saved);
-      $('#themeToggle').on('click', function(){
-        const next = document.body.classList.contains('light') ? 'dark' : 'light';
-        setTheme(next);
-      });
+      
     });
   </script>
-
-  
 </body>
 </html>

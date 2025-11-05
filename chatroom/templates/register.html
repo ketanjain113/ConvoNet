@@ -3,47 +3,161 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Register · Chatroom</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <title>ConvoNet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <style>
-    body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg,#0b1220,#0f172a); color:#e5e7eb; font-family:Inter,system-ui; }
-    .card { width:100%; max-width:480px; background:linear-gradient(180deg,#0f172a,#0b1020); border:1px solid rgba(255,255,255,.06); border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
-    .card-content { padding:28px; }
-    .btn-primary { background:linear-gradient(135deg,#3b82f6,#2563eb); border-radius:10px; text-transform:none; height:44px; line-height:44px; width:100%; }
-    .input { width:100%; background:#0f172a; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:12px 14px; color:#e5e7eb; }
-    label { display:block; margin:10px 0 6px; color:#9ca3af; font-size:.9rem; }
-    .muted { color:#9ca3af; }
+    :root {
+      /* New "Cyber Blue" theme */
+      --bg-gradient: linear-gradient(180deg, #10182E 0%, #0B0F1A 100%);
+      --panel-bg: rgba(255, 255, 255, 0.05); /* Translucent glass effect */
+      --text-color: #E0E0E0;
+      --muted-text-color: #888888;
+      --primary-gradient: linear-gradient(135deg, #00BFFF, #008C9E); /* Cyan/Teal gradient */
+      --primary-hover-gradient: linear-gradient(135deg, #00D5FF, #00AABF);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --input-bg: rgba(0, 0, 0, 0.3);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --transition: all 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    body { 
+      margin:0; 
+      min-height:100vh; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      background: var(--bg-gradient);
+      color:var(--text-color); 
+      font-family:'Inter', system-ui;
+      padding: 16px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .card { 
+      width:100%; 
+      max-width:400px; 
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius:var(--radius-lg); 
+      box-shadow:var(--shadow); 
+      overflow: hidden;
+      animation: fadeIn 0.6s ease-out;
+    }
+    .card-content { padding: 32px; text-align:center; }
+    .logo {
+      font-size: 64px;
+      margin-bottom: 16px;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+    }
+    .btn-primary {
+      border: none;
+      border-radius: var(--radius-md);
+      height: 48px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      background: var(--primary-gradient);
+      color: #ffffff;
+      width: 100%;
+      margin-top: 24px;
+      font-size: 1rem;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover-gradient);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0, 191, 255, 0.2);
+    }
+    .btn-primary:active {
+      transform: scale(0.97);
+    }
+    .input {
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 0 16px;
+      color: var(--text-color);
+      font-family: 'Inter', system-ui;
+      height: 48px;
+      width: 100%;
+      box-sizing: border-box; 
+      transition: var(--transition);
+      font-size: 1rem;
+      margin-top: 16px;
+      appearance: none;
+    }
+    select.input {
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-size: 16px;
+      padding-right: 40px;
+    }
+    .input:focus {
+      border-color: #00BFFF; /* Bright cyan focus */
+      box-shadow: 0 0 0 3px rgba(0, 191, 255, 0.2);
+      outline: none;
+    }
+    .muted { color:var(--muted-text-color); font-weight: 500; }
+    a { 
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-decoration: none; 
+      font-weight: 600; 
+      transition: var(--transition);
+    }
+    a:hover { opacity: 0.8; }
+    .brand {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: var(--text-color);
+    }
+    .error-message {
+      padding:10px;
+      color: #FFD2D2;
+      border:1px solid #D32F2F;
+      background:rgba(211, 47, 47, 0.2);
+      border-radius: var(--radius-sm);
+      margin-top:16px;
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="card-content">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <span class="material-icons" style="color:#60a5fa;">person_add</span>
-        <span style="font-weight:600;">Create your account</span>
-      </div>
-      {% if error %}<div class="card-panel red darken-4" style="padding:10px;color:#fff;">{{error}}</div>{% endif %}
+      <div class="logo material-icons">person_add_alt_1</div>
+      <div class="brand">Create your account</div>
+
+      {% if error %}<div class="error-message">{{error}}</div>{% endif %}
+      
       <form method="POST">
         {% csrf_token %}
-        <label for="username">Username</label>
-        <input class="input" id="username" name="username" type="text" required>
-
-        <label for="password">Password</label>
-        <input class="input" id="password" name="password" type="password" required>
-
-        <label for="gender">Gender</label>
+        <input class="input" id="username" name="username" type="text" required placeholder="Username">
+        <input class="input" id="password" name="password" type="password" required placeholder="Password">
         <select class="input" id="gender" name="gender" required>
+          <option value="" disabled selected>Select Gender</option>
           <option value="male">Male</option>
           <option value="female">Female</option>
         </select>
-        <button class="btn btn-primary waves-effect waves-light" type="submit">Register</button>
+        <button class="btn-primary" type="submit">Create Account</button>
       </form>
-      <div class="muted" style="margin-top:12px;">Have an account? <a href="/login/">Login</a></div>
+      <div class="muted" style="margin-top:24px;">
+        Have an account? <a href="/login/">Login</a>
+      </div>
     </div>
   </div>
-  
 </body>
 </html>
-
-
