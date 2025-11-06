@@ -5,9 +5,49 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from chatroom.chat.mongo_models import RoomDoc, MessageDoc, TypingDoc, UserProfileDoc, DirectMessageDoc, FriendDoc
 from datetime import datetime, timedelta
-from django.core.files.storage import FileSystemStorage
+from django.core.files.storage import default_storage
+import gridfs
+from mongoengine import get_db
+from bson import ObjectId
 from django.conf import settings
 from chatroom.chat.crypto import encrypt_text, decrypt_text
+from django.core.files.base import ContentFile
+import urllib.request
+
+
+def save_bytes_to_storage(name: str, data: bytes, content_type: str | None = None) -> str:
+    """Save raw bytes to the active storage and return a URL.
+
+    Strategy:
+    - If USE_S3: use default_storage.save and default_storage.url
+    - elif USE_GRIDFS: write into GridFS and return /mediafs/<id>/
+    - else: save to default storage and return settings.MEDIA_URL + filename
+    """
+    # Try to infer extension/content type if not provided
+    # If content_type was not provided we leave it unset; callers that fetch
+    # remote resources should pass the response content-type when possible.
+    if not content_type:
+        content_type = 'application/octet-stream'
+
+    filename = name
+    if getattr(settings, 'USE_S3', False):
+        # django's default_storage expects File-like; wrap with ContentFile
+        saved_name = default_storage.save(filename, ContentFile(data))
+        try:
+            return default_storage.url(saved_name)
+        except Exception:
+            return settings.MEDIA_URL + saved_name
+    elif getattr(settings, 'USE_GRIDFS', True):
+        db = get_db()
+        fs = gridfs.GridFS(db)
+        file_id = fs.put(data, filename=filename, content_type=(content_type or 'application/octet-stream'))
+        return f'/mediafs/{str(file_id)}/'
+    else:
+        saved_name = default_storage.save(filename, ContentFile(data))
+        try:
+            return default_storage.url(saved_name)
+        except Exception:
+            return settings.MEDIA_URL + saved_name
 
 # Create your views here.
 def home(request):
@@ -25,9 +65,23 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            # Ensure profile exists
+            # Ensure profile exists. Fetch the seeded avatar once and persist it
+            # in storage so it doesn't change later.
             if not UserProfileDoc.objects(username=user.username).first():
-                UserProfileDoc(username=user.username, gender='male', avatar_url='https://avatar.iran.liara.run/public/boy').save()
+                avatar_base = 'https://avatar.iran.liara.run/public/boy'
+                seed_url = f"{avatar_base}?username={user.username}"
+                try:
+                    resp = urllib.request.urlopen(seed_url)
+                    data = resp.read()
+                    try:
+                        ct = resp.info().get_content_type()
+                    except Exception:
+                        ct = resp.getheader('Content-Type') if resp.getheader('Content-Type') else None
+                    saved = save_bytes_to_storage(f"avatar_{user.username}", data, content_type=ct)
+                    avatar_url = saved
+                except Exception:
+                    avatar_url = seed_url
+                UserProfileDoc(username=user.username, gender='male', avatar_url=avatar_url).save()
             return redirect('dashboard')
         return render(request, 'login.html', {"error": "Invalid credentials"})
     return render(request, 'login.html')
@@ -45,10 +99,22 @@ def register_view(request):
         if User.objects.filter(username=username).exists():
             return render(request, 'register.html', {"error": "Username already taken"})
         user = User.objects.create_user(username=username, password=password)
-        # Create profile and avatar
+        # Create profile and avatar. Fetch the seeded avatar once and persist
+        # it in storage so the image won't change later.
         avatar_base = 'https://avatar.iran.liara.run/public/boy' if gender == 'male' else 'https://avatar.iran.liara.run/public/girl'
-        # Persist URL so it stays consistent per user
-        UserProfileDoc(username=username, gender=gender, avatar_url=avatar_base).save()
+        seed_url = f"{avatar_base}?username={username}"
+        try:
+            resp = urllib.request.urlopen(seed_url)
+            data = resp.read()
+            try:
+                ct = resp.info().get_content_type()
+            except Exception:
+                ct = resp.getheader('Content-Type') if resp.getheader('Content-Type') else None
+            saved = save_bytes_to_storage(f"avatar_{username}", data, content_type=ct)
+            avatar_url = saved
+        except Exception:
+            avatar_url = seed_url
+        UserProfileDoc(username=username, gender=gender, avatar_url=avatar_url).save()
         login(request, user)
         return redirect('dashboard')
     return render(request, 'register.html')
@@ -155,9 +221,27 @@ def send_media(request):
     if not file or not room_name:
         return HttpResponse('Bad request', status=400)
     room_doc = RoomDoc.objects.get(name=room_name)
-    fs = FileSystemStorage(location=str(settings.MEDIA_ROOT))
-    filename = fs.save(file.name, file)
-    url = settings.MEDIA_URL + filename
+
+    # Priority: S3 (if configured) -> GridFS (if enabled) -> local storage
+    url = None
+    if getattr(settings, 'USE_S3', False):
+        filename = default_storage.save(file.name, file)
+        try:
+            url = default_storage.url(filename)
+        except Exception:
+            url = settings.MEDIA_URL + filename
+    elif getattr(settings, 'USE_GRIDFS', True):
+        # Save to GridFS
+        db = get_db()
+        fs = gridfs.GridFS(db)
+        file_id = fs.put(file.read(), filename=file.name, content_type=(file.content_type or 'application/octet-stream'))
+        url = f'/mediafs/{str(file_id)}/'
+    else:
+        filename = default_storage.save(file.name, file)
+        try:
+            url = default_storage.url(filename)
+        except Exception:
+            url = settings.MEDIA_URL + filename
     content_type = (file.content_type or '').lower()
     if content_type.startswith('image/'):
         media_type = 'image'
@@ -167,6 +251,31 @@ def send_media(request):
         media_type = 'file'
     MessageDoc(value='', user=request.user.username, room=room_doc, media_url=url, media_type=media_type).save()
     return JsonResponse({"ok": True, "url": url, "type": media_type})
+
+
+def mediafs_view(request, file_id):
+    """Serve files stored in GridFS at /mediafs/<file_id>/.
+
+    This view reads the file from GridFS and returns it with the stored
+    content-type. It's safe for images/videos because we set Content-Disposition
+    to inline. For other types the browser will download.
+    """
+    try:
+        db = get_db()
+        fs = gridfs.GridFS(db)
+        grid_out = fs.get(ObjectId(file_id))
+    except Exception:
+        return HttpResponse('Not found', status=404)
+
+    data = grid_out.read()
+    content_type = getattr(grid_out, 'content_type', None) or 'application/octet-stream'
+    resp = HttpResponse(data, content_type=content_type)
+    # Inline rendering for images/videos; force download for unknown types
+    if content_type.startswith('image/') or content_type.startswith('video/'):
+        resp['Content-Disposition'] = f'inline; filename="{grid_out.filename}"'
+    else:
+        resp['Content-Disposition'] = f'attachment; filename="{grid_out.filename}"'
+    return resp
 
 
 # --- Direct Messages ---
@@ -213,7 +322,11 @@ def dm_thread(request, username):
             "media_url": m.media_url,
             "media_type": m.media_type,
         })
-    return JsonResponse({"messages": payload})
+    # Build avatar map for participants (sender and recipient)
+    participants = {request.user.username, username}
+    profiles = UserProfileDoc.objects(username__in=list(participants))
+    avatar_map = {p.username: p.avatar_url for p in profiles}
+    return JsonResponse({"messages": payload, "avatars": avatar_map})
 
 
 @login_required
@@ -249,9 +362,25 @@ def dm_send(request):
     media_url = None
     media_type = None
     if file:
-        fs = FileSystemStorage(location=str(settings.MEDIA_ROOT))
-        filename = fs.save(file.name, file)
-        media_url = settings.MEDIA_URL + filename
+        # Use same storage strategy as room uploads and profile avatars
+        if getattr(settings, 'USE_S3', False):
+            filename = default_storage.save(file.name, file)
+            try:
+                media_url = default_storage.url(filename)
+            except Exception:
+                media_url = settings.MEDIA_URL + filename
+        elif getattr(settings, 'USE_GRIDFS', True):
+            db = get_db()
+            fs = gridfs.GridFS(db)
+            file_id = fs.put(file.read(), filename=file.name, content_type=(file.content_type or 'application/octet-stream'))
+            media_url = f'/mediafs/{str(file_id)}/'
+        else:
+            filename = default_storage.save(file.name, file)
+            try:
+                media_url = default_storage.url(filename)
+            except Exception:
+                media_url = settings.MEDIA_URL + filename
+
         content_type = (file.content_type or '').lower()
         if content_type.startswith('image/'):
             media_type = 'image'
@@ -268,6 +397,43 @@ def dm_send(request):
         unread='1'
     ).save()
     return HttpResponse('OK')
+
+
+@login_required
+def profile_avatar(request):
+    """POST multipart/form-data: file -> saves avatar and updates UserProfileDoc.avatar_url
+
+    Returns JSON: { ok: True, avatar_url: <url> }
+    """
+    if request.method != 'POST':
+        return HttpResponse('Method not allowed', status=405)
+    file = request.FILES.get('file')
+    if not file:
+        return HttpResponse('Bad request', status=400)
+
+    # Save using same storage strategy as other uploads
+    url = None
+    if getattr(settings, 'USE_S3', False):
+        filename = default_storage.save(file.name, file)
+        try:
+            url = default_storage.url(filename)
+        except Exception:
+            url = settings.MEDIA_URL + filename
+    elif getattr(settings, 'USE_GRIDFS', True):
+        db = get_db()
+        fs = gridfs.GridFS(db)
+        file_id = fs.put(file.read(), filename=file.name, content_type=(file.content_type or 'application/octet-stream'))
+        url = f'/mediafs/{str(file_id)}/'
+    else:
+        filename = default_storage.save(file.name, file)
+        try:
+            url = default_storage.url(filename)
+        except Exception:
+            url = settings.MEDIA_URL + filename
+
+    # Update profile document
+    UserProfileDoc.objects(username=request.user.username).update_one(upsert=True, set__avatar_url=url)
+    return JsonResponse({"ok": True, "avatar_url": url})
 
 
 @login_required

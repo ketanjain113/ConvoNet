@@ -192,7 +192,7 @@
           {% if peer_avatar %}
             <img class="avatar-inline" src="{{ peer_avatar }}" alt="{{ peer }}" style="width:28px;height:28px;object-fit:cover;border-radius:50%;"/>
           {% else %}
-            <img src="https://avatar.iran.liara.run/public/boy?username={{ request.user.username|urlencode }}" alt="pfp" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>
+            <img src="https://avatar.iran.liara.run/public/boy?username={{ peer|urlencode }}" alt="pfp" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>
             <div class="avatar-inline material-icons" style="font-size:16px;">person</div>
           {% endif %}
           <strong>@{{peer}}</strong>
@@ -228,10 +228,13 @@
     </div>
 
   <script>
+    // avatar map is populated from server and updated per-thread
+    window.__avatars = window.__avatars || {};
+    window.__avatars['{{me}}'] = '{{ me_avatar|default:"" }}';
+    window.__avatars['{{peer}}'] = '{{ peer_avatar|default:"" }}';
+
     function render(items){
       const you = '{{me}}';
-      const meAvatar = '{{ me_avatar|default:"" }}';
-      const peerAvatar = '{{ peer_avatar|default:"" }}';
       const c = $('#list'); c.empty();
       function formatDate(dateStr) {
         const d = new Date(dateStr);
@@ -240,33 +243,47 @@
       }
       items.forEach(m => {
         const me = m.user === you;
-        let body = m.value || '';
+        // Build message body HTML safely:
+        // - If there is media, sanitize the textual part (m.value) but render
+        //   the media HTML (img/video/link) so it displays correctly.
+        // - If there is no media, sanitize and render the text with line breaks.
+        let bodyHtml = '';
         if (m.media_url) {
-          if ((m.media_type||'').startsWith('image')) body += (body?'<br>':'') + `<img class="thumb" src="${m.media_url}">`;
-          else if ((m.media_type||'').startsWith('video')) body += (body?'<br>':'') + `<video class="thumb" src="${m.media_url}" controls></video>`;
-          else body += (body?'<br>':'') + `<a href="${m.media_url}" target="_blank" style="color: ${me ? '#fff' : '#00BFFF'}; text-decoration: underline;">Download file</a>`;
-        }
-        const bodyText = $('<textarea />').html(body).text();
-        const finalBody = bodyText.replace(/\n/g, '<br>').replace(body, body);
-        // Avatar for msg sender
-        let avatarHtml;
-        if(me) {
-          avatarHtml = meAvatar ? `<img class="avatar" src="${meAvatar}" alt="me">` : '<div class="avatar"><span class="material-icons" style="font-size:18px;">account_circle</span></div>';
+          const safeText = (m.value || '') ? $('<textarea />').html(m.value).text() : '';
+          if (safeText) {
+            bodyHtml += safeText.replace(/\n/g, '<br>') + '<br/>';
+          }
+          if ((m.media_type||'').startsWith('image')) bodyHtml += `<img class="thumb" src="${m.media_url}">`;
+          else if ((m.media_type||'').startsWith('video')) bodyHtml += `<video class="thumb" src="${m.media_url}" controls></video>`;
+          else bodyHtml += `<a href="${m.media_url}" target="_blank" style="color: ${me ? '#fff' : '#00BFFF'}; text-decoration: underline;">Download file</a>`;
         } else {
-          avatarHtml = peerAvatar ? `<img class="avatar" src="${peerAvatar}" alt="peer">` : '<div class="avatar"><span class="material-icons" style="font-size:18px;">person</span></div>';
+          bodyHtml = $('<textarea />').html(m.value || '').text().replace(/\n/g, '<br>');
+        }
+        // Avatar for msg sender: prefer avatar from server-provided map, fallback to generator
+        const avatarUrl = (window.__avatars && window.__avatars[m.user]) || '';
+        let avatarHtml;
+        if (avatarUrl) {
+          avatarHtml = `<img class="avatar" src="${avatarUrl}" alt="${m.user}">`;
+        } else {
+          if (me) avatarHtml = '<div class="avatar"><span class="material-icons" style="font-size:18px;">account_circle</span></div>';
+          else avatarHtml = '<div class="avatar"><span class="material-icons" style="font-size:18px;">person</span></div>';
         }
         // Format the meta section to include formatted date if present
         const metaHtml = m.date ? `<div class="meta"><span>${m.user}</span><span>${formatDate(m.date)}</span></div>` : `<div class="meta"><span>${m.user}</span></div>`;
         const html = me
-          ? `<div class="msg me"><div class="bubble me">${metaHtml}<div class="body">${finalBody}</div></div>${avatarHtml}</div>`
-          : `<div class="msg">${avatarHtml}<div class="bubble">${metaHtml}<div class="body">${finalBody}</div></div></div>`;
+          ? `<div class="msg me"><div class="bubble me">${metaHtml}<div class="body">${bodyHtml}</div></div>${avatarHtml}</div>`
+          : `<div class="msg">${avatarHtml}<div class="bubble">${metaHtml}<div class="body">${bodyHtml}</div></div></div>`;
         c.append(html);
       });
       c.scrollTop(c.prop('scrollHeight'));
     }
 
     function load(){
-      $.getJSON('/dm/thread/{{peer}}/', function(r){ render(r.messages || []); });
+      $.getJSON('/dm/thread/{{peer}}/', function(r){
+        // merge avatars returned by endpoint
+        window.__avatars = Object.assign(window.__avatars || {}, r.avatars || {});
+        render(r.messages || []);
+      });
     }
     setInterval(load, 1000);
     load();

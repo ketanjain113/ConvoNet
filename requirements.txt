@@ -3,4 +3,6 @@ mongoengine>=0.27
 pymongo[srv]
 gunicorn
 cryptography
+django-storages[boto3]
+boto3
 
