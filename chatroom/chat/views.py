@@ -304,11 +304,25 @@ def dm_send(request):
     media_url = None
     media_type = None
     if file:
-        filename = default_storage.save(file.name, file)
-        try:
-            media_url = default_storage.url(filename)
-        except Exception:
-            media_url = settings.MEDIA_URL + filename
+        # Use same storage strategy as room uploads and profile avatars
+        if getattr(settings, 'USE_S3', False):
+            filename = default_storage.save(file.name, file)
+            try:
+                media_url = default_storage.url(filename)
+            except Exception:
+                media_url = settings.MEDIA_URL + filename
+        elif getattr(settings, 'USE_GRIDFS', True):
+            db = get_db()
+            fs = gridfs.GridFS(db)
+            file_id = fs.put(file.read(), filename=file.name, content_type=(file.content_type or 'application/octet-stream'))
+            media_url = f'/mediafs/{str(file_id)}/'
+        else:
+            filename = default_storage.save(file.name, file)
+            try:
+                media_url = default_storage.url(filename)
+            except Exception:
+                media_url = settings.MEDIA_URL + filename
+
         content_type = (file.content_type or '').lower()
         if content_type.startswith('image/'):
             media_type = 'image'
