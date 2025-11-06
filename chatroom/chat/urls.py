@@ -21,4 +21,5 @@ urlpatterns = [
     path('dm/chat/<str:username>/', views.dm_chat, name='dm_chat'),
     path('dm/unread_count/', views.dm_unread_count, name='dm_unread_count'),
     path('friends/add', views.add_friend, name='add_friend'),
+    path('profile/avatar', views.profile_avatar, name='profile_avatar'),
 ]

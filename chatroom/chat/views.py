@@ -264,7 +264,11 @@ def dm_thread(request, username):
             "media_url": m.media_url,
             "media_type": m.media_type,
         })
-    return JsonResponse({"messages": payload})
+    # Build avatar map for participants (sender and recipient)
+    participants = {request.user.username, username}
+    profiles = UserProfileDoc.objects(username__in=list(participants))
+    avatar_map = {p.username: p.avatar_url for p in profiles}
+    return JsonResponse({"messages": payload, "avatars": avatar_map})
 
 
 @login_required
@@ -321,6 +325,43 @@ def dm_send(request):
         unread='1'
     ).save()
     return HttpResponse('OK')
+
+
+@login_required
+def profile_avatar(request):
+    """POST multipart/form-data: file -> saves avatar and updates UserProfileDoc.avatar_url
+
+    Returns JSON: { ok: True, avatar_url: <url> }
+    """
+    if request.method != 'POST':
+        return HttpResponse('Method not allowed', status=405)
+    file = request.FILES.get('file')
+    if not file:
+        return HttpResponse('Bad request', status=400)
+
+    # Save using same storage strategy as other uploads
+    url = None
+    if getattr(settings, 'USE_S3', False):
+        filename = default_storage.save(file.name, file)
+        try:
+            url = default_storage.url(filename)
+        except Exception:
+            url = settings.MEDIA_URL + filename
+    elif getattr(settings, 'USE_GRIDFS', True):
+        db = get_db()
+        fs = gridfs.GridFS(db)
+        file_id = fs.put(file.read(), filename=file.name, content_type=(file.content_type or 'application/octet-stream'))
+        url = f'/mediafs/{str(file_id)}/'
+    else:
+        filename = default_storage.save(file.name, file)
+        try:
+            url = default_storage.url(filename)
+        except Exception:
+            url = settings.MEDIA_URL + filename
+
+    # Update profile document
+    UserProfileDoc.objects(username=request.user.username).update_one(upsert=True, set__avatar_url=url)
+    return JsonResponse({"ok": True, "avatar_url": url})
 
 
 @login_required
