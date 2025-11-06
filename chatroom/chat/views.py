@@ -13,7 +13,6 @@ from django.conf import settings
 from chatroom.chat.crypto import encrypt_text, decrypt_text
 from django.core.files.base import ContentFile
 import urllib.request
-import imghdr
 
 
 def save_bytes_to_storage(name: str, data: bytes, content_type: str | None = None) -> str:
@@ -25,13 +24,10 @@ def save_bytes_to_storage(name: str, data: bytes, content_type: str | None = Non
     - else: save to default storage and return settings.MEDIA_URL + filename
     """
     # Try to infer extension/content type if not provided
-    try:
-        if not content_type:
-            kind = imghdr.what(None, h=data)
-            if kind:
-                content_type = f"image/{kind}"
-    except Exception:
-        content_type = content_type or 'application/octet-stream'
+    # If content_type was not provided we leave it unset; callers that fetch
+    # remote resources should pass the response content-type when possible.
+    if not content_type:
+        content_type = 'application/octet-stream'
 
     filename = name
     if getattr(settings, 'USE_S3', False):
@@ -75,7 +71,13 @@ def login_view(request):
                 avatar_base = 'https://avatar.iran.liara.run/public/boy'
                 seed_url = f"{avatar_base}?username={user.username}"
                 try:
-                    saved = save_bytes_to_storage(f"avatar_{user.username}", urllib.request.urlopen(seed_url).read())
+                    resp = urllib.request.urlopen(seed_url)
+                    data = resp.read()
+                    try:
+                        ct = resp.info().get_content_type()
+                    except Exception:
+                        ct = resp.getheader('Content-Type') if resp.getheader('Content-Type') else None
+                    saved = save_bytes_to_storage(f"avatar_{user.username}", data, content_type=ct)
                     avatar_url = saved
                 except Exception:
                     avatar_url = seed_url
@@ -102,7 +104,13 @@ def register_view(request):
         avatar_base = 'https://avatar.iran.liara.run/public/boy' if gender == 'male' else 'https://avatar.iran.liara.run/public/girl'
         seed_url = f"{avatar_base}?username={username}"
         try:
-            saved = save_bytes_to_storage(f"avatar_{username}", urllib.request.urlopen(seed_url).read())
+            resp = urllib.request.urlopen(seed_url)
+            data = resp.read()
+            try:
+                ct = resp.info().get_content_type()
+            except Exception:
+                ct = resp.getheader('Content-Type') if resp.getheader('Content-Type') else None
+            saved = save_bytes_to_storage(f"avatar_{username}", data, content_type=ct)
             avatar_url = saved
         except Exception:
             avatar_url = seed_url
