@@ -192,7 +192,7 @@
           {% if peer_avatar %}
             <img class="avatar-inline" src="{{ peer_avatar }}" alt="{{ peer }}" style="width:28px;height:28px;object-fit:cover;border-radius:50%;"/>
           {% else %}
-            <img src="https://avatar.iran.liara.run/public/boy?username={{ request.user.username|urlencode }}" alt="pfp" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>
+            <img src="https://avatar.iran.liara.run/public/boy?username={{ peer|urlencode }}" alt="pfp" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>
             <div class="avatar-inline material-icons" style="font-size:16px;">person</div>
           {% endif %}
           <strong>@{{peer}}</strong>
@@ -240,14 +240,22 @@
       }
       items.forEach(m => {
         const me = m.user === you;
-        let body = m.value || '';
+        // Build message body HTML safely:
+        // - If there is media, sanitize the textual part (m.value) but render
+        //   the media HTML (img/video/link) so it displays correctly.
+        // - If there is no media, sanitize and render the text with line breaks.
+        let bodyHtml = '';
         if (m.media_url) {
-          if ((m.media_type||'').startsWith('image')) body += (body?'<br>':'') + `<img class="thumb" src="${m.media_url}">`;
-          else if ((m.media_type||'').startsWith('video')) body += (body?'<br>':'') + `<video class="thumb" src="${m.media_url}" controls></video>`;
-          else body += (body?'<br>':'') + `<a href="${m.media_url}" target="_blank" style="color: ${me ? '#fff' : '#00BFFF'}; text-decoration: underline;">Download file</a>`;
+          const safeText = (m.value || '') ? $('<textarea />').html(m.value).text() : '';
+          if (safeText) {
+            bodyHtml += safeText.replace(/\n/g, '<br>') + '<br/>';
+          }
+          if ((m.media_type||'').startsWith('image')) bodyHtml += `<img class="thumb" src="${m.media_url}">`;
+          else if ((m.media_type||'').startsWith('video')) bodyHtml += `<video class="thumb" src="${m.media_url}" controls></video>`;
+          else bodyHtml += `<a href="${m.media_url}" target="_blank" style="color: ${me ? '#fff' : '#00BFFF'}; text-decoration: underline;">Download file</a>`;
+        } else {
+          bodyHtml = $('<textarea />').html(m.value || '').text().replace(/\n/g, '<br>');
         }
-        const bodyText = $('<textarea />').html(body).text();
-        const finalBody = bodyText.replace(/\n/g, '<br>').replace(body, body);
         // Avatar for msg sender
         let avatarHtml;
         if(me) {

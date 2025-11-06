@@ -28,9 +28,12 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            # Ensure profile exists
+            # Ensure profile exists. Use a deterministic avatar URL seeded by username
+            # so the avatar doesn't change per request.
             if not UserProfileDoc.objects(username=user.username).first():
-                UserProfileDoc(username=user.username, gender='male', avatar_url='https://avatar.iran.liara.run/public/boy').save()
+                avatar_base = 'https://avatar.iran.liara.run/public/boy'
+                avatar_url = f"{avatar_base}?username={user.username}"
+                UserProfileDoc(username=user.username, gender='male', avatar_url=avatar_url).save()
             return redirect('dashboard')
         return render(request, 'login.html', {"error": "Invalid credentials"})
     return render(request, 'login.html')
@@ -48,10 +51,12 @@ def register_view(request):
         if User.objects.filter(username=username).exists():
             return render(request, 'register.html', {"error": "Username already taken"})
         user = User.objects.create_user(username=username, password=password)
-        # Create profile and avatar
-        avatar_base = 'https://avatar.iran.liara.run/public/boy' if gender == 'male' else 'https://avatar.iran.liara.run/public/girl'
-        # Persist URL so it stays consistent per user
-        UserProfileDoc(username=username, gender=gender, avatar_url=avatar_base).save()
+    # Create profile and avatar. Persist a deterministic avatar URL that
+    # includes the username so the external avatar generator returns a
+    # stable image for each user.
+    avatar_base = 'https://avatar.iran.liara.run/public/boy' if gender == 'male' else 'https://avatar.iran.liara.run/public/girl'
+    avatar_url = f"{avatar_base}?username={username}"
+    UserProfileDoc(username=username, gender=gender, avatar_url=avatar_url).save()
         login(request, user)
         return redirect('dashboard')
     return render(request, 'register.html')
