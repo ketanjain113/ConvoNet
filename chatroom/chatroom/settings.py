@@ -143,6 +143,18 @@ CSRF_TRUSTED_ORIGINS = [
     "https://convonet-production.up.railway.app"
 ]
 
+# When behind a proxy (Railway), Django may receive HTTP requests while the
+# original client used HTTPS. Ensure Django knows to trust the X-Forwarded-Proto
+# header so request.is_secure() is correct — this is required for secure
+# cookies and origin checks used by CSRF when DEBUG=False.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
+# In production (DEBUG==False) it's recommended to set secure cookies.
+if not DEBUG:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+
 
 
 

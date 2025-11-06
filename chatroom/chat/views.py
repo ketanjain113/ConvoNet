@@ -5,7 +5,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from chatroom.chat.mongo_models import RoomDoc, MessageDoc, TypingDoc, UserProfileDoc, DirectMessageDoc, FriendDoc
 from datetime import datetime, timedelta
-from django.core.files.storage import FileSystemStorage
+from django.core.files.storage import default_storage
+import gridfs
+from mongoengine import get_db
+from bson import ObjectId
 from django.conf import settings
 from chatroom.chat.crypto import encrypt_text, decrypt_text
 
@@ -155,9 +158,27 @@ def send_media(request):
     if not file or not room_name:
         return HttpResponse('Bad request', status=400)
     room_doc = RoomDoc.objects.get(name=room_name)
-    fs = FileSystemStorage(location=str(settings.MEDIA_ROOT))
-    filename = fs.save(file.name, file)
-    url = settings.MEDIA_URL + filename
+
+    # Priority: S3 (if configured) -> GridFS (if enabled) -> local storage
+    url = None
+    if getattr(settings, 'USE_S3', False):
+        filename = default_storage.save(file.name, file)
+        try:
+            url = default_storage.url(filename)
+        except Exception:
+            url = settings.MEDIA_URL + filename
+    elif getattr(settings, 'USE_GRIDFS', True):
+        # Save to GridFS
+        db = get_db()
+        fs = gridfs.GridFS(db)
+        file_id = fs.put(file.read(), filename=file.name, content_type=(file.content_type or 'application/octet-stream'))
+        url = f'/mediafs/{str(file_id)}/'
+    else:
+        filename = default_storage.save(file.name, file)
+        try:
+            url = default_storage.url(filename)
+        except Exception:
+            url = settings.MEDIA_URL + filename
     content_type = (file.content_type or '').lower()
     if content_type.startswith('image/'):
         media_type = 'image'
@@ -167,6 +188,31 @@ def send_media(request):
         media_type = 'file'
     MessageDoc(value='', user=request.user.username, room=room_doc, media_url=url, media_type=media_type).save()
     return JsonResponse({"ok": True, "url": url, "type": media_type})
+
+
+def mediafs_view(request, file_id):
+    """Serve files stored in GridFS at /mediafs/<file_id>/.
+
+    This view reads the file from GridFS and returns it with the stored
+    content-type. It's safe for images/videos because we set Content-Disposition
+    to inline. For other types the browser will download.
+    """
+    try:
+        db = get_db()
+        fs = gridfs.GridFS(db)
+        grid_out = fs.get(ObjectId(file_id))
+    except Exception:
+        return HttpResponse('Not found', status=404)
+
+    data = grid_out.read()
+    content_type = getattr(grid_out, 'content_type', None) or 'application/octet-stream'
+    resp = HttpResponse(data, content_type=content_type)
+    # Inline rendering for images/videos; force download for unknown types
+    if content_type.startswith('image/') or content_type.startswith('video/'):
+        resp['Content-Disposition'] = f'inline; filename="{grid_out.filename}"'
+    else:
+        resp['Content-Disposition'] = f'attachment; filename="{grid_out.filename}"'
+    return resp
 
 
 # --- Direct Messages ---
@@ -249,9 +295,11 @@ def dm_send(request):
     media_url = None
     media_type = None
     if file:
-        fs = FileSystemStorage(location=str(settings.MEDIA_ROOT))
-        filename = fs.save(file.name, file)
-        media_url = settings.MEDIA_URL + filename
+        filename = default_storage.save(file.name, file)
+        try:
+            media_url = default_storage.url(filename)
+        except Exception:
+            media_url = settings.MEDIA_URL + filename
         content_type = (file.content_type or '').lower()
         if content_type.startswith('image/'):
             media_type = 'image'
