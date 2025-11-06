@@ -51,12 +51,12 @@ def register_view(request):
         if User.objects.filter(username=username).exists():
             return render(request, 'register.html', {"error": "Username already taken"})
         user = User.objects.create_user(username=username, password=password)
-    # Create profile and avatar. Persist a deterministic avatar URL that
-    # includes the username so the external avatar generator returns a
-    # stable image for each user.
-    avatar_base = 'https://avatar.iran.liara.run/public/boy' if gender == 'male' else 'https://avatar.iran.liara.run/public/girl'
-    avatar_url = f"{avatar_base}?username={username}"
-    UserProfileDoc(username=username, gender=gender, avatar_url=avatar_url).save()
+        # Create profile and avatar. Persist a deterministic avatar URL that
+        # includes the username so the external avatar generator returns a
+        # stable image for each user.
+        avatar_base = 'https://avatar.iran.liara.run/public/boy' if gender == 'male' else 'https://avatar.iran.liara.run/public/girl'
+        avatar_url = f"{avatar_base}?username={username}"
+        UserProfileDoc(username=username, gender=gender, avatar_url=avatar_url).save()
         login(request, user)
         return redirect('dashboard')
     return render(request, 'register.html')

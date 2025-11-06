@@ -284,7 +284,10 @@
               {% for r in rooms %}
                 <div class="room-item">
                   <strong> {{r}}</strong>
-                  <a class="btn-primary" href="/{{r}}/">Open</a>
+                  <a class="btn-primary" href="/{{r}}/">
+                    <span class="material-icons" style="font-size:18px;">arrow_forward_ios</span>
+                    <span>Open</span>
+                  </a>
                 </div>
               {% endfor %}
             </div>
