@@ -11,6 +11,47 @@ from mongoengine import get_db
 from bson import ObjectId
 from django.conf import settings
 from chatroom.chat.crypto import encrypt_text, decrypt_text
+from django.core.files.base import ContentFile
+import urllib.request
+import imghdr
+
+
+def save_bytes_to_storage(name: str, data: bytes, content_type: str | None = None) -> str:
+    """Save raw bytes to the active storage and return a URL.
+
+    Strategy:
+    - If USE_S3: use default_storage.save and default_storage.url
+    - elif USE_GRIDFS: write into GridFS and return /mediafs/<id>/
+    - else: save to default storage and return settings.MEDIA_URL + filename
+    """
+    # Try to infer extension/content type if not provided
+    try:
+        if not content_type:
+            kind = imghdr.what(None, h=data)
+            if kind:
+                content_type = f"image/{kind}"
+    except Exception:
+        content_type = content_type or 'application/octet-stream'
+
+    filename = name
+    if getattr(settings, 'USE_S3', False):
+        # django's default_storage expects File-like; wrap with ContentFile
+        saved_name = default_storage.save(filename, ContentFile(data))
+        try:
+            return default_storage.url(saved_name)
+        except Exception:
+            return settings.MEDIA_URL + saved_name
+    elif getattr(settings, 'USE_GRIDFS', True):
+        db = get_db()
+        fs = gridfs.GridFS(db)
+        file_id = fs.put(data, filename=filename, content_type=(content_type or 'application/octet-stream'))
+        return f'/mediafs/{str(file_id)}/'
+    else:
+        saved_name = default_storage.save(filename, ContentFile(data))
+        try:
+            return default_storage.url(saved_name)
+        except Exception:
+            return settings.MEDIA_URL + saved_name
 
 # Create your views here.
 def home(request):
@@ -28,11 +69,16 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            # Ensure profile exists. Use a deterministic avatar URL seeded by username
-            # so the avatar doesn't change per request.
+            # Ensure profile exists. Fetch the seeded avatar once and persist it
+            # in storage so it doesn't change later.
             if not UserProfileDoc.objects(username=user.username).first():
                 avatar_base = 'https://avatar.iran.liara.run/public/boy'
-                avatar_url = f"{avatar_base}?username={user.username}"
+                seed_url = f"{avatar_base}?username={user.username}"
+                try:
+                    saved = save_bytes_to_storage(f"avatar_{user.username}", urllib.request.urlopen(seed_url).read())
+                    avatar_url = saved
+                except Exception:
+                    avatar_url = seed_url
                 UserProfileDoc(username=user.username, gender='male', avatar_url=avatar_url).save()
             return redirect('dashboard')
         return render(request, 'login.html', {"error": "Invalid credentials"})
@@ -51,11 +97,15 @@ def register_view(request):
         if User.objects.filter(username=username).exists():
             return render(request, 'register.html', {"error": "Username already taken"})
         user = User.objects.create_user(username=username, password=password)
-        # Create profile and avatar. Persist a deterministic avatar URL that
-        # includes the username so the external avatar generator returns a
-        # stable image for each user.
+        # Create profile and avatar. Fetch the seeded avatar once and persist
+        # it in storage so the image won't change later.
         avatar_base = 'https://avatar.iran.liara.run/public/boy' if gender == 'male' else 'https://avatar.iran.liara.run/public/girl'
-        avatar_url = f"{avatar_base}?username={username}"
+        seed_url = f"{avatar_base}?username={username}"
+        try:
+            saved = save_bytes_to_storage(f"avatar_{username}", urllib.request.urlopen(seed_url).read())
+            avatar_url = saved
+        except Exception:
+            avatar_url = seed_url
         UserProfileDoc(username=username, gender=gender, avatar_url=avatar_url).save()
         login(request, user)
         return redirect('dashboard')
