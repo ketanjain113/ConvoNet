@@ -288,15 +288,18 @@ def dm_inbox(request):
     unread = {}
     for p in partners:
         unread[p] = DirectMessageDoc.objects(sender=p, recipient=request.user.username, unread='1').count()
-    # Get avatars
-    profiles = {p.username: p.avatar_url for p in UserProfileDoc.objects(username__in=list(partners))}
-    partners_avatars = {}
-    for p in partners:
-        partners_avatars[p] = profiles.get(p)
+    # Get avatars (mapping username -> avatar_url)
+    profiles = {prof.username: prof.avatar_url for prof in UserProfileDoc.objects(username__in=list(partners))}
+    # Build a list of partner objects for easier template access (each: {username, avatar, unread})
+    partners_list = []
+    for p in sorted(list(partners)):
+        partners_list.append({
+            'username': p,
+            'avatar': profiles.get(p),
+            'unread': unread.get(p, 0),
+        })
     return render(request, 'dm_inbox.html', {
-        "partners": sorted(list(partners)),
-        "unread": unread,
-        "partners_avatars": partners_avatars,
+        "partners": partners_list,
     })
 
 

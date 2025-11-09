@@ -159,18 +159,19 @@
       {% for p in partners %}
         <div class="row">
           <div class="row-user">
-            {% if partners_avatars and partners_avatars.p %}
-              <img class="avatar-inline" src="{{ partners_avatars.p }}" alt="{{p}}" style="width:32px;height:32px;object-fit:cover;border-radius:50%;"/>
+            {% if p.avatar %}
+              <img class="avatar-inline" src="{{ p.avatar }}" alt="{{ p.username }}" style="width:32px;height:32px;object-fit:cover;border-radius:50%;"/>
             {% else %}
-              <div class="avatar-inline material-icons" style="font-size:18px;">person</div>
+              <!-- Fallback avatar generator using username -->
+              <img class="avatar-inline" src="https://avatar.iran.liara.run/public/boy?username={{ p.username|urlencode }}" alt="{{ p.username }}" style="width:32px;height:32px;object-fit:cover;border-radius:50%;"/>
             {% endif %}
-            <strong>@{{p}}</strong>
+            <strong>@{{ p.username }}</strong>
           </div>
           <div style="display:flex; align-items:center; gap: 8px;">
-            {% if unread[p] %}
-            <span class="pill">{{ unread[p] }}</span>
+            {% if p.unread %}
+            <span class="pill">{{ p.unread }}</span>
             {% endif %}
-            <a href="/dm/chat/{{p}}/" class="btn-open">Open</a>
+            <a href="/dm/chat/{{ p.username }}/" class="btn-open">Open</a>
           </div>
         </div>
       {% empty %}
